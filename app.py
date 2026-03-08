@@ -4,7 +4,7 @@ import yfinance as yf
 from datetime import datetime
 
 # 페이지 설정
-st.set_page_config(page_title="라오어 팬딩 퀀트 시스템", layout="wide")
+st.set_page_config(page_title="이상훈 퀀트 시스템", layout="wide")
 
 # --- [데이터 관리] 임시 데이터베이스 (나중에 구글 시트로 연결) ---
 if 'trade_log' not in st.session_state:
