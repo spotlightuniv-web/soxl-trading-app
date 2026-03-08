@@ -110,7 +110,7 @@ else:
     cash, stocks, cycle = 10000.0, 0, 1
 
 # --- 화면 출력 시작 ---
-st.title("🚀 SOXL 동적 퀀트 매매 시스템")
+st.title("🚀 Cantstop SOXL 스마트 퀀트 시스템 v2.0")
 
 # 차트 출력
 show_candle_chart()
