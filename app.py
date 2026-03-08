@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import pytz
 
 # 1. 페이지 설정 및 제목
-st.set_page_config(page_title="SOXL 스마트 퀀트 비서 v2.9", layout="wide")
+st.set_page_config(page_title="Cantstop SOXL 스마트 퀀트 시스템 v2.0", layout="wide")
 
 # 2. 미국 시장 날짜 계산 (미국 시간 기준 다음 영업일 자동 계산)
 def get_trading_date():
