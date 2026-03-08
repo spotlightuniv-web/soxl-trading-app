@@ -8,51 +8,51 @@ from datetime import datetime
 # 1. 페이지 설정
 st.set_page_config(page_title="라오어 팬딩 퀀트 시스템", layout="wide")
 
-# 2. 구글 시트 인증 설정 (보안 에러 해결 로직)
+# 2. 구글 시트 인증 및 연결 설정
 try:
     scope = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
     
-    # Secrets에서 정보를 가져와 줄바꿈(\n) 문자를 올바르게 교정합니다.
+    # Secrets에서 정보를 가져와 안전하게 정리합니다.
     info = dict(st.secrets["gcp_service_account"])
     info["private_key"] = info["private_key"].replace("\\n", "\n").strip()
     
     creds = Credentials.from_service_account_info(info, scopes=scope)
     client = gspread.authorize(creds)
     
-    # 상훈님의 시트 열기
+    # 상훈님의 시트 이름 확인
     spreadsheet = client.open("soxl invest")
     sheet = spreadsheet.sheet1
     st.sidebar.success("✅ 구글 시트 연결 성공!")
 except Exception as e:
-    st.error(f"❌ 연결 실패: {e}")
+    st.error(f"❌ 구글 시트 연결 중 오류 발생: {e}")
     st.stop()
 
-# 3. 실시간 시세 데이터 가져오기
-@st.cache_data(ttl=60) # 1분마다 갱신
-def get_stock_data():
+# 3. 실시간 시세 조회 함수
+@st.cache_data(ttl=60)
+def get_current_price():
     ticker = yf.Ticker("SOXL")
-    hist = ticker.history(period="1d")
-    return round(hist['Close'].iloc[-1], 2)
+    data = ticker.history(period="1d")
+    return round(data['Close'].iloc[-1], 2)
 
-curr_p = get_stock_data()
+curr_p = get_current_price()
 
-# 4. 대시보드 상단 현황
+# 4. 메인 화면 대시보드
 st.title("📈 라오어 팬딩 퀀트 대시보드")
 col1, col2, col3 = st.columns(3)
 col1.metric("SOXL 현재가", f"${curr_p}")
 
-# 5. 주문 제안 (상훈님의 가이드 방식 반영)
-st.subheader("📢 오늘 밤 예약 주문 제안")
-prop_data = [
-    {'순번': '1-1', '구분': '매수', '예약가': round(curr_p * 0.98, 2), '수량': 15, '비고': 'Limit VWAP -2%'},
-    {'순번': '2-1', '구분': '매도', '예약가': round(curr_p * 1.05, 2), '수량': 15, '비고': '익절 목표 +5%'},
+# 5. 주문 제안 (예시 전략)
+st.subheader("📢 오늘 밤 주문 제안")
+proposals = [
+    {'순번': '1-1', '구분': '매수', '예약가': round(curr_p * 0.98, 2), '수량': 15},
+    {'순번': '2-1', '구분': '매도', '예약가': round(curr_p * 1.05, 2), '수량': 15}
 ]
-st.table(pd.DataFrame(prop_data))
+st.table(pd.DataFrame(proposals))
 
-# 6. 체결 기록 및 자동 계산 로직
+# 6. 체결 기록 입력 및 자동 계산
 st.divider()
 left_col, right_col = st.columns([1, 2])
 
@@ -64,7 +64,48 @@ with left_col:
         t_price = st.number_input("체결 단가 ($)", value=curr_p, step=0.01)
         t_qty = st.number_input("체결 수량 (주)", min_value=1, step=1)
         
-        submitted = st.form_submit_button("구글 시트에 기록하기")
+        submitted = st.form_submit_button("체결 기록 저장")
         
         if submitted:
-            # 기존 마지막 데이터 가져오기 (잔고 계산용)
+            # 기존 데이터 읽어와서 잔고 계산
+            all_records = sheet.get_all_records()
+            if all_records:
+                last_row = all_records[-1]
+                # 시트 데이터 형식에 따라 변환 처리
+                prev_stock = int(last_row.get('주식수', 0))
+                prev_cash = float(str(last_row.get('계좌금액', 10000)).replace(',', ''))
+            else:
+                prev_stock = 0
+                prev_cash = 10000.0
+            
+            # 매수/매도 계산
+            amount = t_price * t_qty
+            if t_type == "매수":
+                new_stock = prev_stock + t_qty
+                new_cash = prev_cash - amount
+            else:
+                new_stock = prev_stock - t_qty
+                new_cash = prev_cash + amount
+            
+            # 구글 시트에 행 추가
+            new_row = [
+                t_date.strftime('%Y-%m-%d'),
+                t_type,
+                t_price,
+                t_qty,
+                round(amount, 2),
+                new_stock,
+                round(new_cash, 2)
+            ]
+            sheet.append_row(new_row)
+            st.success("✅ 시트에 기록되었습니다!")
+            st.rerun()
+
+# 7. 매매 히스토리 표시
+with right_col:
+    st.subheader("📋 매매 기록 현황")
+    data = sheet.get_all_records()
+    if data:
+        st.dataframe(pd.DataFrame(data).tail(15), use_container_width=True)
+    else:
+        st.info("기록된 데이터가 없습니다.")
