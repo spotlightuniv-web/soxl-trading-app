@@ -13,7 +13,7 @@ if 'trade_log' not in st.session_state:
     ])
 
 # --- [상단] 실시간 시세 및 자산 현황 ---
-st.title("📊 라오어 팬딩 퀀트 대시보드")
+st.title("📊 이상훈 퀀트 대시보드")
 data = yf.Ticker("SOXL").history(period="1d")
 curr_p = round(data['Close'].iloc[-1], 2)
 
