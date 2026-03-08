@@ -1,4 +1,23 @@
 import streamlit as st
+import gspread
+from google.oauth2.service_account import Credentials
+
+# --- [보안] 구글 시트 연결 설정 ---
+# Streamlit Secrets에 저장한 정보를 불러옵니다.
+scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+# Secrets에서 정보를 가져와 인증 객체를 만듭니다.
+creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
+client = gspread.authorize(creds)
+
+# 상훈님의 시트 이름으로 연결합니다.
+spreadsheet = client.open("soxl invest")
+sheet = spreadsheet.sheet1 # 첫 번째 탭(시트1) 사용
+
+import streamlit as st
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
