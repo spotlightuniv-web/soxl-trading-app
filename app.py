@@ -56,8 +56,8 @@ with col_in:
         t_date = st.date_input("일자", datetime.now())
         t_type = st.selectbox("주문구분", ["매수", "매도"])
         t_filled = st.radio("체결여부", ["O", "X"])
-        t_price = st.number_input("실제 체결단가", value=curr_p)
-        t_qty = st.number_input("실제 체결수량", min_value=0)
+        t_price = st.number_input("체결단가", value=curr_p)
+        t_qty = st.number_input("주문수량", min_value=0)
         
         submitted = st.form_submit_button("시트에 기록 저장")
         
