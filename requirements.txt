@@ -3,3 +3,5 @@ pandas
 yfinance
 matplotlib
 requests
+gspread
+google-auth
