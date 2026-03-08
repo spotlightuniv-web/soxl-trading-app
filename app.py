@@ -9,8 +9,15 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Secrets에서 정보를 가져와 인증 객체를 만듭니다.
-creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
+# Secrets에서 정보를 가져옵니다.
+info = st.secrets["gcp_service_account"]
+
+# private_key 내부의 \n 문자열을 실제 줄바꿈으로 변환하고 양 끝 공백을 제거합니다.
+actual_info = dict(info)
+actual_info["private_key"] = info["private_key"].replace("\\n", "\n").strip()
+
+# 정리된 정보로 인증 객체를 만듭니다.
+creds = Credentials.from_service_account_info(actual_info, scopes=scope)
 client = gspread.authorize(creds)
 
 # 상훈님의 시트 이름으로 연결합니다.
