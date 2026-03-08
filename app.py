@@ -119,4 +119,63 @@ elif cash < 3000:
 else:
     st.success("⚖️ **안정 구간** ($3,000~$7,000) - 균형 매매 가동")
     proposals = [
-        {'구분': '매
+        {'구분': '매수', '가격': vwap_p, '수량': int(order_amt/vwap_p), '비고': '안정 체결'},
+        {'구분': '매수', '가격': round(vwap_p - (avg_vol*0.5), 2), '수량': int(order_amt/vwap_p), '비고': '평단 관리'},
+        {'구분': '매도', '가격': round(curr_p * 1.05, 2), '수량': int(stocks/2), '비고': '분할 익절'},
+        {'구분': '매도', '가격': round(curr_p * 1.1, 2), '수량': int(stocks/2), '비고': '잔량 익절'}
+    ]
+
+# 7. 일체형 체결 입력 폼
+with st.form("trade_form"):
+    h1, h2, h3, h4, h5, h6 = st.columns([1, 1, 1, 1, 1, 1.5])
+    h1.write("**제안**")
+    h2.write("**제안가**")
+    h3.write("**제안수량**")
+    h4.write("**체결체크**")
+    h5.write("**실제단가**")
+    h6.write("**실제수량**")
+    
+    filled_list = []
+    for i, p in enumerate(proposals):
+        c1, c2, c3, c4, c5, c6 = st.columns([1, 1, 1, 1, 1, 1.5])
+        c1.write(f"{p['구분']}\n({p['비고']})")
+        c2.write(f"${p['가격']}")
+        c3.write(f"{p['수량']}주")
+        
+        is_f = c4.checkbox("체결", key=f"f_{i}")
+        act_p = c5.number_input("가", value=float(p['가격']), key=f"p_{i}", label_visibility="collapsed")
+        act_q = c6.number_input("수", value=int(p['수량']), key=f"q_{i}", label_visibility="collapsed")
+        
+        if is_f:
+            filled_list.append({'prop': p, 'act_p': act_p, 'act_q': act_q})
+
+    if st.form_submit_button("📁 선택한 체결 내역 일괄 저장"):
+        if not filled_list:
+            st.warning("체결 체크된 항목이 없습니다.")
+        else:
+            temp_cash, temp_stocks = cash, stocks
+            for item in filled_list:
+                p = item['prop']
+                ap, aq = item['act_p'], item['act_q']
+                amt = round(ap * aq, 2)
+                
+                if p['구분'] == '매수':
+                    temp_stocks += aq
+                    temp_cash -= amt
+                else:
+                    temp_stocks -= aq
+                    temp_cash += amt
+                
+                # 12개 컬럼 저장 (일자, 구분, 제안가, 제안수량, 여부, 체결가, 체결수량, 체결액, 주식수, 잔고, 회차, 수익)
+                sheet.append_row([
+                    trade_date, p['구분'], p['가격'], p['수량'],
+                    "O", ap, aq, amt, temp_stocks, round(temp_cash, 2), cycle, 0
+                ])
+            st.success("✅ 저장 성공! 다음 사이클을 위해 새로고침합니다.")
+            st.rerun()
+
+# 8. 최근 기록
+if all_records:
+    st.divider()
+    st.subheader("📋 최근 5건 매매 기록")
+    st.dataframe(pd.DataFrame(all_records).tail(5), use_container_width=True)
